@@ -1,0 +1,71 @@
+# traefik-dynamic.yaml - Traefik - START
+http:
+  middlewares:
+    dashboard-auth:
+      basicAuth:
+        users:
+          - "traefik-admin:$apr1$u5m91va6$jYOH.sK1gKMaLmWlNxA7m/"
+        removeHeader: false
+        realm: "Traefik Dashboard"
+
+    geo-block:
+      plugin:
+        geoblock:
+          allowLocalRequests: true
+          allowUnknownCountries: false
+          api: https://get.geojs.io/v1/ip/country/{ip}
+          apiTimeoutMs: 150
+          cacheSize: 200
+          countries:
+            - RU  # Russland
+            - CN  # China
+            - IR  # Iran
+            - IN  # Indien
+            - PK  # Pakistan
+            - BD  # Bangladesch
+            - ID  # Indonesien
+            - SG  # Singapur
+            - PH  # Philippinen
+            - VN  # Vietnam
+            - TH  # Thailand
+            - MY  # Malaysia
+            - KR  # Südkorea
+            - KZ  # Kasachstan
+            - HK  # Hongkong
+            - TW  # Taiwan
+            - AE  # VAE
+            - QA  # Katar
+            - SA  # Saudi-Arabien
+            - JP  # Japan
+            - NP  # Nepal
+            - LK  # Sri Lanka
+          blackListMode: true
+          httpStatusCodeDeniedRequest: 403
+          logAllowedRequests: false
+          logApiRequests: true
+          logLocalRequests: false
+          silentStartUp: false
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1s
+
+  routers:
+    ping:
+      entryPoints:
+        - websecure-https
+      rule: "Path(`/ping`)"
+      service: "ping@internal"
+
+tls:
+  options:
+    modern:
+      minVersion: "VersionTLS13"
+      sniStrict: true
+      cipherSuites:
+        - "TLS_AES_128_GCM_SHA256"
+        - "TLS_AES_256_GCM_SHA384"
+        - "TLS_CHACHA20_POLY1305_SHA256"
+# traefik-dynamic.yaml - Traefik - ENDE

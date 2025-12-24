@@ -1,0 +1,101 @@
+# traefik.yaml Traefik - START
+accessLog:
+  filePath: ""
+  format: "json"
+
+api:
+  dashboard: true
+  insecure: false
+
+certificatesResolvers:
+  letsEncrypt:
+    acme:
+      tlschallenge: true
+      storage: "/letsencrypt/Traefik.json"
+      caServer: "https://acme-v02.api.letsencrypt.org/directory"
+
+entryPoints:
+  web-http:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: "websecure-https"
+          scheme: "https"
+          permanent: true
+    forwardedHeaders:
+      trustedIPs:
+        - "127.0.0.1/32"
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+  websecure-https:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+        options: "modern"
+    http3:
+      advertisedPort: 443
+    forwardedHeaders:
+      trustedIPs:
+        - "127.0.0.1/32"
+        - "10.0.0.0/8"
+        - "172.16.0.0/12"
+        - "192.168.0.0/16"
+
+experimental:
+  plugins:
+    geoblock:
+      moduleName: "github.com/PascalMinder/geoblock"
+      version: "v0.3.3"
+
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: true
+
+log:
+  compress: true
+  filePath: "/var/log/traefik.log"
+  format: json
+  level: INFO
+  maxAge: 7
+  maxBackups: 5
+  maxSize: 50
+
+metrics:
+  prometheus:
+    entryPoint: "websecure-https"
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    manualRouting: true
+    buckets:
+      - 0.1
+      - 0.3
+      - 1.2
+      - 5.0
+
+ping:
+  entryPoint: "websecure-https"
+  manualRouting: true
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: "traefik_proxy_network"
+    watch: true
+  file:
+    filename: "/etc/traefik/traefik-dynamic.yaml"
+    watch: true
+  providersThrottleDuration: 2s
+
+serversTransport:
+  insecureSkipVerify: false
+  maxIdleConnsPerHost: 64
+  forwardingTimeouts:
+    dialTimeout: 30s
+    responseHeaderTimeout: 60s
+    idleConnTimeout: 90s
+# traefik.yaml Traefik - ENDE

@@ -1,0 +1,55 @@
+# docker-compose.yaml - Traefik - START
+volumes:
+  letsencrypt-data:
+    driver: local
+    driver_opts:
+      device: ${PWD}/volumes
+      o: bind
+      type: none
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: ${COMPOSE_PROJECT_NAME}
+    command:
+      - "--certificatesresolvers.letsEncrypt.acme.email=${LETSENCRYPT_EMAIL}"
+    environment:
+      - TZ=${TIMEZONE}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=${HOSTRULE}
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure-https
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=api@internal
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=dashboard-auth@file,geo-block@file,rate-limit@file
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+    networks:
+      - ${PROXY_NETWORK}
+      - default
+    ports:
+      - mode: host
+        published: 80
+        target: 80
+      - mode: host
+        published: 443
+        target: 443
+        protocol: tcp  # HTTPS (HTTP/2 etc.) auf Port 443 (TCP)
+      - mode: host
+        published: 443
+        target: 443
+        protocol: udp  # Zusätzlich HTTP/3 auf Port 443 (UDP/QUIC)
+    restart: ${RESTART}
+    volumes:
+      - ./configs/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./configs/traefik-dynamic.yaml:/etc/traefik/traefik-dynamic.yaml:ro
+      - ./logs:/var/log
+      - letsencrypt-data:/letsencrypt
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  default:
+    driver: bridge
+  traefik_proxy_network:
+    external: true
+    name: ${PROXY_NETWORK}
+# docker-compose.yaml - Traefik - ENDE
