@@ -1,0 +1,24 @@
+# Environment Variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Let's Encrypt Certificates
+volumes/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup

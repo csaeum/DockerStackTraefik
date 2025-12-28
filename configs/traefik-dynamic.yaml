@@ -1,13 +1,38 @@
 # traefik-dynamic.yaml - Traefik - START
+# ========================================
+# HTTP Middlewares (Wiederverwendbare Bausteine)
+# ========================================
 http:
   middlewares:
+    # ========================================
+    # Authentication (Legacy - nicht mehr genutzt)
+    # ========================================
+    # Hinweis: Dashboard-Auth erfolgt jetzt über docker-compose.yaml Labels mit Env-Vars
+    # Diese Middleware wird nicht mehr verwendet, bleibt aber für Referenz
     dashboard-auth:
       basicAuth:
         users:
-          - "traefik-admin:$apr1$u5m91va6$jYOH.sK1gKMaLmWlNxA7m/"
+          - "traefik-admin:$$apr1$$CHANGE_ME$$CHANGE_ME"
         removeHeader: false
         realm: "Traefik Dashboard"
 
+    # ========================================
+    # Redirects
+    # ========================================
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    redirect-to-www:
+      redirectRegex:
+        regex: "^(https?://)(?:www\\.)?(.+)"
+        replacement: "${1}www.${2}"
+        permanent: true
+
+    # ========================================
+    # Geo-Blocking
+    # ========================================
     geo-block:
       plugin:
         geoblock:
@@ -46,19 +71,47 @@ http:
           logLocalRequests: false
           silentStartUp: false
 
+    # ========================================
+    # Rate Limiting & DoS Protection
+    # ========================================
     rate-limit:
       rateLimit:
         average: 100
         burst: 50
         period: 1s
 
-  routers:
-    ping:
-      entryPoints:
-        - websecure-https
-      rule: "Path(`/ping`)"
-      service: "ping@internal"
+    in-flight-limit:
+      inFlightReq:
+        amount: 100
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
 
+    # ========================================
+    # Security Headers
+    # ========================================
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: "geolocation=(), microphone=(), camera=()"
+
+    # ========================================
+    # Performance
+    # ========================================
+    compression:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+
+# ========================================
+# TLS Options
+# ========================================
 tls:
   options:
     modern:

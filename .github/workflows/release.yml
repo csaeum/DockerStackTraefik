@@ -1,0 +1,70 @@
+name: Release - Create Archive
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get tag name
+        id: tag
+        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Create .env.example in archive
+        run: |
+          # Ensure .env.example exists for users
+          if [ ! -f .env.example ]; then
+            echo ".env.example not found!"
+            exit 1
+          fi
+
+      - name: Create release archive
+        run: |
+          # Create clean archive without dev files (uses .gitattributes)
+          git archive --format=zip --prefix=DockerStackTraefik/ -o DockerStackTraefik.zip HEAD
+
+      - name: Extract changelog for this release
+        id: changelog
+        run: |
+          # Try to extract changelog from CHANGELOG.md
+          if [ -f CHANGELOG.md ]; then
+            # Extract section for this version
+            VERSION=${{ steps.tag.outputs.TAG }}
+            awk "/## $VERSION/,/## [0-9]/" CHANGELOG.md | sed '$d' > release-notes.md
+
+            # If empty, use tag message
+            if [ ! -s release-notes.md ]; then
+              git tag -l --format='%(contents)' $VERSION > release-notes.md
+            fi
+          else
+            git tag -l --format='%(contents)' ${{ steps.tag.outputs.TAG }} > release-notes.md
+          fi
+
+          # Show what we got
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.tag.outputs.TAG }}
+          body_path: release-notes.md
+          files: DockerStackTraefik.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact for verification
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-archive
+          path: DockerStackTraefik.zip
+          retention-days: 30

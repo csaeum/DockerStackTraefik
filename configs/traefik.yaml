@@ -1,60 +1,77 @@
 # traefik.yaml Traefik - START
+# ========================================
+# Access Logging
+# ========================================
 accessLog:
-  filePath: ""
+  filePath: "/var/log/traefik-access.log"
   format: "json"
+  filters:
+    statusCodes:
+      - "400-599"
+    minDuration: "10ms"
 
+# ========================================
+# API & Dashboard
+# ========================================
 api:
   dashboard: true
   insecure: false
 
+# ========================================
+# Certificate Resolvers
+# ========================================
 certificatesResolvers:
   letsEncrypt:
     acme:
+      email: "info@web-seo-consulting.eu"
       tlschallenge: true
       storage: "/letsencrypt/Traefik.json"
       caServer: "https://acme-v02.api.letsencrypt.org/directory"
 
+# ========================================
+# Entry Points
+# ========================================
 entryPoints:
   web-http:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: "websecure-https"
-          scheme: "https"
-          permanent: true
     forwardedHeaders:
       trustedIPs:
         - "127.0.0.1/32"
-        - "10.0.0.0/8"
-        - "172.16.0.0/12"
-        - "192.168.0.0/16"
+        # Füge hier deine tatsächlichen Proxy/CloudFlare IPs hinzu
+        # Beispiel: - "173.245.48.0/20"
 
   websecure-https:
     address: ":443"
     http:
       tls:
-        certResolver: letsencrypt
+        certResolver: letsEncrypt
         options: "modern"
     http3:
       advertisedPort: 443
     forwardedHeaders:
       trustedIPs:
         - "127.0.0.1/32"
-        - "10.0.0.0/8"
-        - "172.16.0.0/12"
-        - "192.168.0.0/16"
+        # Füge hier deine tatsächlichen Proxy/CloudFlare IPs hinzu
 
+# ========================================
+# Experimental Features
+# ========================================
 experimental:
   plugins:
     geoblock:
       moduleName: "github.com/PascalMinder/geoblock"
       version: "v0.3.3"
 
+# ========================================
+# Global Settings
+# ========================================
 global:
   checkNewVersion: true
-  sendAnonymousUsage: true
+  sendAnonymousUsage: false
 
+# ========================================
+# Application Logging
+# ========================================
 log:
   compress: true
   filePath: "/var/log/traefik.log"
@@ -64,6 +81,9 @@ log:
   maxBackups: 5
   maxSize: 50
 
+# ========================================
+# Metrics
+# ========================================
 metrics:
   prometheus:
     entryPoint: "websecure-https"
@@ -76,10 +96,16 @@ metrics:
       - 1.2
       - 5.0
 
+# ========================================
+# Ping / Health Check
+# ========================================
 ping:
   entryPoint: "websecure-https"
   manualRouting: true
 
+# ========================================
+# Providers
+# ========================================
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
@@ -91,6 +117,9 @@ providers:
     watch: true
   providersThrottleDuration: 2s
 
+# ========================================
+# Server Transport
+# ========================================
 serversTransport:
   insecureSkipVerify: false
   maxIdleConnsPerHost: 64

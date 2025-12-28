@@ -1,0 +1,25 @@
+# .gitattributes - Export Configuration
+
+# Exclude development and CI/CD files from archives (git archive / GitHub releases)
+/.github export-ignore
+/.idea export-ignore
+/tests export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+.editorconfig export-ignore
+
+# Exclude documentation for developers (keep user docs)
+CHANGELOG.md export-ignore
+DEPLOYMENT.md export-ignore
+ENV-CONFIGURATION.md export-ignore
+LABELS-CHECKLIST.md export-ignore
+
+# Exclude example and template files
+.env.example export-ignore
+
+# Keep logs directory structure but exclude content
+/logs/*.log export-ignore
+/logs/*.gz export-ignore
+
+# Exclude volumes (certificates, etc.)
+/volumes export-ignore

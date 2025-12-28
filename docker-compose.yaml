@@ -1,15 +1,7 @@
 # docker-compose.yaml - Traefik - START
-volumes:
-  letsencrypt-data:
-    driver: local
-    driver_opts:
-      device: ${PWD}/volumes
-      o: bind
-      type: none
-
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.6  # Pinned version statt latest
     container_name: ${COMPOSE_PROJECT_NAME}
     command:
       - "--certificatesresolvers.letsEncrypt.acme.email=${LETSENCRYPT_EMAIL}"
@@ -17,11 +9,48 @@ services:
       - TZ=${TIMEZONE}
     labels:
       - traefik.enable=true
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=${HOSTRULE}
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=websecure-https
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=api@internal
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=dashboard-auth@file,geo-block@file,rate-limit@file
-      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls.certresolver=letsencrypt
+
+      # ========================================
+      # Middlewares (Env-Variable gesteuert)
+      # ========================================
+      # Dashboard Authentication
+      - traefik.http.middlewares.dashboard-auth-env.basicauth.users=${DASHBOARD_USER}:${DASHBOARD_PASSWORD_HASH}
+      - traefik.http.middlewares.dashboard-auth-env.basicauth.realm=Traefik Dashboard
+
+      # Rate Limiting (aus .env steuerbar)
+      - traefik.http.middlewares.rate-limit-env.ratelimit.average=${RATE_LIMIT_AVERAGE}
+      - traefik.http.middlewares.rate-limit-env.ratelimit.burst=${RATE_LIMIT_BURST}
+      - traefik.http.middlewares.rate-limit-env.ratelimit.period=${RATE_LIMIT_PERIOD}
+
+      # In-Flight Limiting (aus .env steuerbar)
+      - traefik.http.middlewares.in-flight-limit-env.inflightreq.amount=${IN_FLIGHT_LIMIT}
+
+      # ========================================
+      # Dashboard Router (HTTP -> HTTPS Redirect)
+      # ========================================
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard-http.rule=${HOSTRULE}
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard-http.entrypoints=web-http
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard-http.middlewares=redirect-to-https@file
+
+      # ========================================
+      # Dashboard Router (HTTPS)
+      # ========================================
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard.rule=${HOSTRULE} && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard.entrypoints=websecure-https
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard.service=api@internal
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard.tls.certresolver=letsEncrypt
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard.tls.options=modern@file
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-dashboard.middlewares=dashboard-auth-env,rate-limit-env
+
+      # ========================================
+      # Prometheus Metrics Router (HTTPS)
+      # ========================================
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-metrics.rule=${HOSTRULE} && Path(`/metrics`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-metrics.entrypoints=websecure-https
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-metrics.service=prometheus@internal
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-metrics.tls.certresolver=letsEncrypt
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-metrics.tls.options=modern@file
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}-metrics.middlewares=dashboard-auth-env
     networks:
       - ${PROXY_NETWORK}
       - default
@@ -37,14 +66,14 @@ services:
         published: 443
         target: 443
         protocol: udp  # Zusätzlich HTTP/3 auf Port 443 (UDP/QUIC)
-    restart: ${RESTART}
+    restart: unless-stopped
     volumes:
       - ./configs/traefik.yaml:/etc/traefik/traefik.yaml:ro
       - ./configs/traefik-dynamic.yaml:/etc/traefik/traefik-dynamic.yaml:ro
-      - ./logs:/var/log
-      - letsencrypt-data:/letsencrypt
+      - ./logs:/var/log:rw
+      - letsencrypt-data:/letsencrypt:rw
       - /etc/localtime:/etc/localtime:ro
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
 networks:
   default:
@@ -52,4 +81,12 @@ networks:
   traefik_proxy_network:
     external: true
     name: ${PROXY_NETWORK}
+
+volumes:
+  letsencrypt-data:
+    driver: local
+    driver_opts:
+      device: ${PWD}/volumes
+      o: bind
+      type: none
 # docker-compose.yaml - Traefik - ENDE
