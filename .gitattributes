@@ -8,14 +8,11 @@
 .gitattributes export-ignore
 .editorconfig export-ignore
 
-# Exclude documentation for developers (keep user docs)
-CHANGELOG.md export-ignore
-DEPLOYMENT.md export-ignore
-ENV-CONFIGURATION.md export-ignore
-LABELS-CHECKLIST.md export-ignore
+# Keep all documentation (important for users)
+# CHANGELOG.md, DEPLOYMENT.md, ENV-CONFIGURATION.md, LABELS-CHECKLIST.md
+# are all user-facing documentation and should be included in releases
 
-# Exclude example and template files
-.env.example export-ignore
+# Keep .env.example (important template for users)
 
 # Keep logs directory structure but exclude content
 /logs/*.log export-ignore

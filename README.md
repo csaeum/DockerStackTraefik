@@ -41,7 +41,11 @@ Produktions-fertiger Traefik v3.6 Stack mit Security Best Practices, Let's Encry
 - ✅ **Dashboard** - Web-UI für Traefik
 - ✅ **Prometheus Metrics** - `/metrics` Endpoint
 - ✅ **JSON Logs** - Strukturiertes Logging
-- ✅ **Access Logs** - Nur 4xx/5xx Errors
+- ✅ **Access Logs** - Nur Fehler (4xx/5xx), weniger Disk I/O
+
+### Integration
+- ✅ **Mailcow Support** - ACME Challenge Router für Let's Encrypt
+- ✅ **Ping Endpoint** - Health Check via `/ping`
 
 ---
 
@@ -530,14 +534,30 @@ networks:
 
 ### Beispiel 5: Mailcow verbinden
 
-```yaml
-# Kein docker-compose.yaml - nur Command!
+**✅ ACME Challenge Integration ist bereits vorkonfiguriert!**
 
+Dieser Stack enthält einen speziellen Router `mailcow-acme-challenge`, der es Mailcow ermöglicht, Let's Encrypt Zertifikate über Traefik zu erhalten.
+
+#### Schritt 1: Mailcow-Domains anpassen
+
+Die vorkonfigurierten Domains befinden sich in `configs/traefik-dynamic.yaml` Zeile 134:
+
+```yaml
+# Passe diese Domains an deine Mailcow-Installation an:
+mailcow-acme-challenge:
+  rule: "(Host(`autodiscover.deine-domain.de`) || Host(`autoconfig.deine-domain.de`) || Host(`mail.deine-domain.de`)) && PathPrefix(`/.well-known/acme-challenge/`)"
+```
+
+#### Schritt 2: Mailcow zum Netzwerk hinzufügen
+
+```bash
 # Mailcow zum Traefik-Netzwerk hinzufügen
 docker network connect traefik_proxy_network mailcow-nginx-mailcow-1
 ```
 
-**Dann in Mailcow docker-compose.yaml Labels hinzufügen:**
+#### Schritt 3: (Optional) Mailcow Web-UI über Traefik
+
+**In Mailcow docker-compose.yaml Labels hinzufügen:**
 ```yaml
 labels:
   - traefik.enable=true
@@ -547,6 +567,8 @@ labels:
   - traefik.http.services.mailcow.loadbalancer.server.port=443
   - traefik.http.services.mailcow.loadbalancer.server.scheme=https
 ```
+
+**Hinweis:** Der ACME Challenge Router hat Priority 1000 und wird automatisch vor anderen Routen verarbeitet.
 
 ---
 

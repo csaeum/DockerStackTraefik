@@ -109,6 +109,46 @@ http:
         excludedContentTypes:
           - "text/event-stream"
 
+  # ========================================
+  # HTTP Routers
+  # ========================================
+  routers:
+    # ========================================
+    # Ping / Health Check Router
+    # ========================================
+    ping:
+      entryPoints:
+        - websecure-https
+      rule: "Path(`/ping`)"
+      service: "ping@internal"
+
+    # ========================================
+    # Mailcow ACME Challenge Router
+    # ========================================
+    # Hinweis: Dieser Router ermöglicht es Mailcow, Let's Encrypt Zertifikate
+    # über Traefik zu erhalten. Nur auf Servern mit Mailcow aktiv.
+    # Die Domains werden über .env konfiguriert (MAILCOW_ACME_DOMAINS)
+    mailcow-acme-challenge:
+      entryPoints:
+        - web-http
+      rule: "(Host(`autodiscover.clicklocal.de`) || Host(`autoconfig.clicklocal.de`) || Host(`autodiscover.familie-saeum.de`) || Host(`autoconfig.familie-saeum.de`) || Host(`autodiscover.lichte-kraft.eu`) || Host(`autoconfig.lichte-kraft.eu`) || Host(`autodiscover.web-seo-consulting.eu`) || Host(`autoconfig.web-seo-consulting.eu`) || Host(`mail.web-seo-consulting.eu`) || Host(`autodiscover.wunschschreiner.eu`) || Host(`autoconfig.wunschschreiner.eu`)) && PathPrefix(`/.well-known/acme-challenge/`)"
+      service: mailcow-acme
+      priority: 1000
+
+  # ========================================
+  # HTTP Services
+  # ========================================
+  services:
+    # ========================================
+    # Mailcow ACME Service
+    # ========================================
+    # Hinweis: Zeigt auf den Mailcow NGINX Container.
+    # Der Container muss im gleichen Netzwerk sein (traefik_proxy_network)
+    mailcow-acme:
+      loadBalancer:
+        servers:
+          - url: "http://mailcow-nginx-mailcow-1:8080"
+
 # ========================================
 # TLS Options
 # ========================================

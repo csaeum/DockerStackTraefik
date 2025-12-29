@@ -535,6 +535,39 @@ docker compose config
 
 ---
 
+## Mailcow Integration (Optional)
+
+### Hinweis
+
+Dieser Stack enthält eine vorkonfigurierte Mailcow ACME Challenge Integration. Die Mailcow-Domains sind **nicht** über .env steuerbar, sondern müssen in `configs/traefik-dynamic.yaml` angepasst werden.
+
+**Warum nicht in .env?**
+- Router-Rules sind zu komplex für Key-Value Format
+- Mailcow-Integration wird selten geändert (einmal bei Setup)
+- Dynamische File Provider unterstützt keine Env-Variablen in Rules
+
+### Mailcow-Domains anpassen
+
+```bash
+nano configs/traefik-dynamic.yaml
+# Zeile 134: mailcow-acme-challenge Router
+```
+
+**Standard-Domains (anpassen auf deine Installation):**
+```yaml
+rule: "(Host(`autodiscover.deine-domain.de`) || Host(`autoconfig.deine-domain.de`) || Host(`mail.deine-domain.de`)) && PathPrefix(`/.well-known/acme-challenge/`)"
+```
+
+**Nach Änderung:**
+```bash
+# Traefik lädt die Konfiguration automatisch neu (watch: true)
+# Kein Neustart erforderlich!
+```
+
+**Siehe auch:** README.md Abschnitt "Beispiel 5: Mailcow verbinden"
+
+---
+
 ## Weitere Steuerungsmöglichkeiten
 
 ### Was ist NICHT über .env steuerbar?

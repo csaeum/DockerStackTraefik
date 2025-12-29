@@ -37,7 +37,7 @@ entryPoints:
     forwardedHeaders:
       trustedIPs:
         - "127.0.0.1/32"
-        # Füge hier deine tatsächlichen Proxy/CloudFlare IPs hinzu
+        # Füge hier deine tatsächlichen Proxy/CloudFlare IPs hinzu, falls benötigt
         # Beispiel: - "173.245.48.0/20"
 
   websecure-https:
@@ -51,7 +51,7 @@ entryPoints:
     forwardedHeaders:
       trustedIPs:
         - "127.0.0.1/32"
-        # Füge hier deine tatsächlichen Proxy/CloudFlare IPs hinzu
+        # Füge hier deine tatsächlichen Proxy/CloudFlare IPs hinzu, falls benötigt
 
 # ========================================
 # Experimental Features

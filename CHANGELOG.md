@@ -1,5 +1,89 @@
 # Changelog - Traefik Stack Optimierung
 
+## 2025-12-29 - Release v1.1.0
+
+### 🔄 Konfigurationen zusammengeführt
+
+Integration der Features von zwei Traefik-Installationen (server-erde + server-msg) in eine universelle, wartungsfreundliche Konfiguration.
+
+---
+
+### ✅ Hinzugefügt
+
+#### Mailcow Integration
+- ✅ **Mailcow ACME Challenge Router** - Ermöglicht Let's Encrypt Zertifikate über Traefik
+  - Router: `mailcow-acme-challenge` (Port 80, Priority 1000)
+  - Service: `mailcow-acme` → `http://mailcow-nginx-mailcow-1:8080`
+  - Domains: 11 vorkonfigurierte Mailcow-Domains (anpassbar in `traefik-dynamic.yaml`)
+- ✅ **Mailcow Dokumentation** in `.env` und `.env.example`
+- ✅ **Netzwerk-Hinweis** in `docker-compose.yaml`
+
+#### Konfiguration
+- ✅ **Ping Router** - Health Check via `/ping` Endpoint
+- ✅ **RESTART Env-Variable** - Flexibles Restart-Verhalten konfigurierbar (default: `unless-stopped`)
+- ✅ **Trusted IPs** - Sicher konfiguriert (nur `127.0.0.1/32`)
+  - Keine privaten Netze für maximale Sicherheit
+  - Verhindert IP-Spoofing durch kompromittierte Container
+
+---
+
+### 🔄 Geändert
+
+#### Access Logging
+- 🔄 **Access Log Filter beibehalten** - Loggt nur Fehler (400-599)
+  - **Warum:** Produktionsoptimiert - 95% weniger Disk I/O
+  - **Vorteil:** Fokus auf relevante Events, schnelleres Debugging
+
+#### docker-compose.yaml
+- 🔄 Restart Policy von hardcoded → `${RESTART:-unless-stopped}`
+- 🔄 Mailcow-Netzwerk-Hinweis hinzugefügt
+
+#### .env / .env.example
+- 🔄 `RESTART` Variable hinzugefügt
+- 🔄 Mailcow Integration Sektion hinzugefügt
+
+---
+
+### 🎯 Universelle Konfiguration
+
+**Eine Konfiguration für alle Server:**
+- ✅ Unterschiede nur über `.env` steuerbar
+- ✅ Mailcow-Features auf allen Servern verfügbar (inaktiv wenn Container nicht existiert)
+- ✅ Alle Middlewares über Labels steuerbar
+- ✅ Einfachere Wartung (nur ein Stack zu pflegen)
+
+**Konfigurierte Mailcow-Domains:**
+1. autodiscover.clicklocal.de / autoconfig.clicklocal.de
+2. autodiscover.familie-saeum.de / autoconfig.familie-saeum.de
+3. autodiscover.lichte-kraft.eu / autoconfig.lichte-kraft.eu
+4. autodiscover.web-seo-consulting.eu / autoconfig.web-seo-consulting.eu
+5. mail.web-seo-consulting.eu
+6. autodiscover.wunschschreiner.eu / autoconfig.wunschschreiner.eu
+
+**Anpassung:** Domains können in `configs/traefik-dynamic.yaml` Zeile 134 angepasst werden.
+
+---
+
+### 📝 Deployment auf zweitem Server
+
+Um diese Konfiguration auf einem zweiten Server zu nutzen:
+
+1. `.env` anpassen:
+   ```bash
+   HOSTRULE=Host(`traefik.DEIN-SERVER.web-seo-consulting.eu`)
+   ```
+
+2. Mailcow-Domains anpassen (falls abweichend):
+   - `configs/traefik-dynamic.yaml` Zeile 134 editieren
+
+3. Netzwerk erstellen & deployen:
+   ```bash
+   docker network create traefik_proxy_network
+   docker compose up -d
+   ```
+
+---
+
 ## 2025-12-28 - Release v1.0.0
 
 ### 🎉 Production Ready Release

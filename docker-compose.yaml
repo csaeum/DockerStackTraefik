@@ -54,6 +54,8 @@ services:
     networks:
       - ${PROXY_NETWORK}
       - default
+      # Hinweis: Wenn Mailcow verwendet wird, muss das traefik_proxy_network
+      # auch von Mailcow genutzt werden, damit der mailcow-acme-challenge Router funktioniert
     ports:
       - mode: host
         published: 80
