@@ -26,7 +26,7 @@ http:
 
     redirect-to-www:
       redirectRegex:
-        regex: "^(https?://)(?!www\\.)(.+)"
+        regex: "^(https?://)([^w].*|w[^w].*|ww[^w].*|www[^.].*)"
         replacement: "${1}www.${2}"
         permanent: true
 
